@@ -8,23 +8,23 @@
 package routers
 
 import (
-	"go-file-store/controllers"
-
 	"github.com/astaxie/beego"
+	"github.com/astaxie/beego/context"
+	"go-file-store/controllers"
 )
 
+// 初始化路由配置
 func init() {
 	ns := beego.NewNamespace("/v1",
-		beego.NSNamespace("/object",
-			beego.NSInclude(
-				&controllers.ObjectController{},
-			),
-		),
-		beego.NSNamespace("/user",
-			beego.NSInclude(
-				&controllers.UserController{},
-			),
-		),
+		beego.NSBefore(func(ctx *context.Context) {
+			ctx.Output.Header("Access-Control-Allow-Origin", ctx.Input.Domain())
+			ctx.Output.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE")
+			ctx.Output.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept")
+			ctx.Output.Header("Access-Control-Allow-Credentials", "true")
+		}),
+		beego.NSRouter("client", &controllers.ClientController{}),
+		beego.NSRouter("token", &controllers.TokenController{}),
+		beego.NSAutoRouter(&controllers.FileController{}),
 	)
 	beego.AddNamespace(ns)
 }
