@@ -9,7 +9,7 @@ type ResponseMessage struct {
 const ClientCreateFailed = 2001
 const ClientCreateSuccess = 2000
 const TokenCreateFailed = 2011
-const ToeknCreateSuccess = 2012
+const TokenCreateSuccess = 2012
 const WrongClientOdAndSecret = 2021
 const UploadFileFailed = 2031
 const UploadFileSuccess = 2032

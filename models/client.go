@@ -4,7 +4,8 @@ import (
 	"time"
 	"github.com/astaxie/beego/orm"
 	"math/rand"
-	"../utils"
+	"go-file-store/utils"
+	"log"
 )
 
 type Client struct {
@@ -22,6 +23,7 @@ func (client *Client) TableName() string  {
 // NewClient 生成新的Client
 func NewClient() (*Client, error)  {
 	clientId, err := generateClientId()
+	log.Print(clientId)
 	if err == nil {
 		client := &Client{
 			ClientId: clientId,
@@ -41,19 +43,34 @@ func (client *Client) Save() (id int64, err error)  {
 	return id, err
 }
 
+// ValidateClient 验证client_id 和 client_secret
+func ValidateClient(clientId string, clientSecret string) (*Client, error)  {
+	db := orm.NewOrm()
+	newClientSecret := utils.CryptPassword(clientSecret)
+	client := Client{
+		ClientId: clientId,
+		ClientSecret: newClientSecret,
+	}
+	err := db.Read(&client, "ClientId", "ClientSecret")
+	if err != nil {
+		return nil, err
+	}
+	return &client, nil
+}
+
 // generateClientId 生成账户Id
 func generateClientId() (clientId string, err error)  {
 	numbers := "0123456789"
 	sequences := make([]byte, 16)
 	db := orm.NewOrm()
-	client := new(Client)
+	client := &Client{}
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for {
 		for i := range sequences {
 			sequences[i] = numbers[r.Intn(len(numbers))]
 		}
 		clientId = string(sequences)
-		count, err := db.QueryTable(client).Filter("client_id", client).Count()
+		count, err := db.QueryTable(client.TableName()).Filter("client_id", clientId).Count()
 		if err != nil {
 			return "", err
 		}

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"github.com/astaxie/beego/orm"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // 初始化数据库连接
@@ -19,4 +21,11 @@ func init() {
 		dbUser, dbPassword, dbHost, dbPort, dbDatabase)
 	dbSource = strings.Replace(dbSource, "Local", "Asia%2FShanghai", 1)
 	orm.RegisterDataBase("default", "mysql", dbSource, 30, 30)
+
+	orm.RegisterModel(new(Client), new(Token), new(File))
+	orm.RunSyncdb("default", false, false)
+
+	if beego.BConfig.RunMode == "dev" {
+		orm.Debug = true
+	}
 }

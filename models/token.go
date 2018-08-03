@@ -3,7 +3,7 @@ package models
 import (
 	"github.com/astaxie/beego/orm"
 	"time"
-	"../utils"
+	"go-file-store/utils"
 )
 
 type Token struct {
@@ -12,7 +12,7 @@ type Token struct {
 	Client *Client `orm:"rel(fk)"` // 设置一对多关系
 	Expires uint
 	CreatedAt time.Time `orm:"auto_now_add;type(timestamp)"`
-	UpdatedAt time.Time `orm:"auto_add;type(timestamp)"`
+	UpdatedAt time.Time `orm:"auto_now;type(timestamp)"`
 }
 
 // 自定义表名

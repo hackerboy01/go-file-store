@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"github.com/astaxie/beego"
-	"../models"
-	"../vo"
+	"go-file-store/models"
+	"go-file-store/vo"
 )
 
 type ClientController struct {
