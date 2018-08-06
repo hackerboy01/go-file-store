@@ -6,6 +6,9 @@ import (
 	"math/rand"
 	"go-file-store/utils"
 	"log"
+	"fmt"
+	"strings"
+	"github.com/astaxie/beego"
 )
 
 type Client struct {
@@ -56,6 +59,12 @@ func ValidateClient(clientId string, clientSecret string) (*Client, error)  {
 		return nil, err
 	}
 	return &client, nil
+}
+
+func (client *Client) RootDir() string {
+	return fmt.Sprintf("%s/%s",
+		strings.TrimRight(beego.AppConfig.String("uploadFileDir"), "/"),
+		client.ClientId)
 }
 
 // generateClientId 生成账户Id

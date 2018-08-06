@@ -49,3 +49,22 @@ func NewTokenAndSave(seconds uint, client *Client) (t *Token, err error)  {
 		}
 	}
 }
+
+// IsTokenExist 验证Token是否存在
+func IsTokenValidate(token string) (*Token, error)  {
+	db := orm.NewOrm()
+	tokenModel := &Token{
+		Token: token,
+	}
+
+	err := db.Read(tokenModel)
+	if err != nil {
+		return nil, err
+	}
+	return tokenModel, nil
+}
+
+// IsTokenExpire验证Token是否过期
+func (t *Token) IsTokenExpire() bool {
+	return t.Expires < uint(time.Now().Unix())
+}

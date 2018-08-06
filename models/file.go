@@ -4,6 +4,12 @@ import (
 	"time"
 	"github.com/astaxie/beego/orm"
 	"go-file-store/utils"
+	"fmt"
+	"github.com/astaxie/beego"
+	"strings"
+	"os"
+	"path"
+	"mime"
 )
 
 type File struct {
@@ -52,3 +58,36 @@ func NewFileAndSave(uploadFileName string, loaclFileName string, client *Client)
 	}
 }
 
+
+// GetCompleteFilePath 获取文件的绝对路径
+func (f *File) GetCompleteFilePath() string {
+	return fmt.Sprintf("%s/%s/%s",
+		beego.AppConfig.String("uploadFilesDir"),
+		f.Client.ClientId,
+		strings.TrimLeft(f.Local, "/"))
+}
+
+// isFileExists 判断文件是否存在
+func (f *File) isFileExists() bool {
+	if _, err := os.Stat(f.GetCompleteFilePath()); err != nil && os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
+// FileName	文件名
+func (f *File) FileName() string {
+	segments := strings.Split(f.Local, "/")
+	return segments[len(segments) - 1]
+}
+
+// FileExt 返回文件的扩展名
+func (f *File) FileExt() string {
+	fileName := f.FileName()
+	return path.Ext(fileName)
+}
+
+// FileMIME	根据扩展名返回文件类型
+func (f *File) FileMIME() string {
+	return mime.TypeByExtension(f.FileExt())
+}

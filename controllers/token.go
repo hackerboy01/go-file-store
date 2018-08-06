@@ -3,7 +3,6 @@ package controllers
 import (
 	"github.com/astaxie/beego"
 	"strings"
-	"go-file-store/utils"
 	"go-file-store/vo"
 	"go-file-store/models"
 )
@@ -16,7 +15,7 @@ type TokenController struct {
 func (ctx *TokenController) Post()  {
 	// 获取传入创建token的参数
 	clientId := strings.Trim(ctx.GetString("client_id"), " ")
-	clientSecret := utils.CryptPassword(strings.Trim(ctx.GetString("client_secret"), " "))
+	clientSecret := strings.Trim(ctx.GetString("client_secret"), " ")
 	expires, err := ctx.GetInt("expires", 300)
 	if err != nil || expires < 0 {
 		ctx.Ctx.Output.SetStatus(400)
