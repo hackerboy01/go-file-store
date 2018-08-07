@@ -62,9 +62,10 @@ func ValidateClient(clientId string, clientSecret string) (*Client, error)  {
 }
 
 func (client *Client) RootDir() string {
-	return fmt.Sprintf("%s/%s",
-		strings.TrimRight(beego.AppConfig.String("uploadFileDir"), "/"),
+	clientFolder := fmt.Sprintf("%s/%s",
+		strings.TrimRight(beego.AppConfig.String("uploadFilesDir"), "/"),
 		client.ClientId)
+	return clientFolder
 }
 
 // generateClientId 生成账户Id

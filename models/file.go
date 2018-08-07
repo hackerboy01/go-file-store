@@ -33,13 +33,12 @@ func (f *File) TableUnique() [][]string  {
 }
 
 // NewFileAndSave  创建新文件并保存
-func NewFileAndSave(uploadFileName string, loaclFileName string, client *Client) (*File, error) {
+func NewFileAndSave(uploadFileName string, client *Client) (*File, error) {
 	var slug string
 	db := orm.NewOrm()
 	file := &File{
 		Client: client,
 		Upload: uploadFileName,
-		Local: loaclFileName,
 	}
 	for {
 		slug = utils.MD5(utils.GenerateRandomString(24))

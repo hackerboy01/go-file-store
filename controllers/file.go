@@ -1,15 +1,16 @@
 package controllers
 
 import (
-	"github.com/astaxie/beego"
 	"go-file-store/vo"
 	"strings"
 	"go-file-store/models"
+	"path"
+	"github.com/astaxie/beego"
 	"fmt"
 	"os"
-	syspath "path"
-	"go-file-store/utils"
+	"time"
 	"log"
+	"strconv"
 )
 
 type FileController struct {
@@ -42,11 +43,10 @@ func (ctx *FileController) Upload()  {
 		ctx.StopRun()
 	}
 
-	path := strings.Trim(ctx.GetString("path", ""), "/")
 	token := strings.Trim(ctx.GetString("token"), " ")
 	tokenModel, err := models.IsTokenValidate(token)
 
-	if err == nil {
+	if err != nil {
 		response.Code = vo.InvalidToken
 		response.Message = "非法的Token"
 		ctx.ServeJSON()
@@ -59,48 +59,43 @@ func (ctx *FileController) Upload()  {
 		ctx.ServeJSON()
 		ctx.StopRun()
 	}
+	filePath, err := saveFiles(ctx, tokenModel.Client, response)
+	if err != nil {
+		ctx.ServeJSON()
+		ctx.StopRun()
+	}
+	newFileModel, err := models.NewFileAndSave(filePath, tokenModel.Client)
+	if err != nil {
+		response.Code = vo.UploadFileFailed
+		response.Message = "存储文件记录到数据库错误"
+	} else {
+		response.Data = make(map[string] interface{})
+		response.Data["slug"] = newFileModel.Slug
+	}
+	ctx.ServeJSON()
+}
 
+// saveFiles 保存文件方法
+func saveFiles(ctx *FileController, client *models.Client, response *vo.ResponseMessage) (string, error)  {
 	file, fileHeader, err := ctx.GetFile("file")
 	if err != nil {
 		response.Code = vo.UploadFileFailed
 		response.Message = "读取文件错误"
-		ctx.ServeJSON()
-		ctx.StopRun()
+		return "", err
 	}
-	completeFileSaveDir := fmt.Sprintf("%s/%s", tokenModel.Client.RootDir(), path)
-	completeFileSaveDir = strings.TrimRight(completeFileSaveDir, "/")
-	if _, err = os.Stat(completeFileSaveDir); err != nil && os.IsNotExist(err) {
-		os.MkdirAll(completeFileSaveDir, os.ModePerm)
+	targetSaveFolder := client.RootDir()
+	if _, err = os.Stat(targetSaveFolder); err != nil && os.IsNotExist(err) {
+		os.MkdirAll(targetSaveFolder, os.ModePerm)
 	}
-	uploadFilePath := fmt.Sprintf("%s/%s", path, fileHeader.Filename)
-	completeFilePath := fmt.Sprintf("%s/%s", completeFileSaveDir, fileHeader.Filename)
-	localFilePath := fmt.Sprintf("%s/%ws", path, fileHeader.Filename)
-	uploadFileExt := syspath.Ext(fileHeader.Filename)
-
-	for {
-		if _, err := os.Stat(completeFilePath); err != nil && os.IsNotExist(err) {
-			break
-		}
-		newFileName := fmt.Sprintf("%s%s", utils.MD5(utils.GenerateRandomString(32)), uploadFileExt)
-		completeFilePath = fmt.Sprintf("%s/%s", completeFileSaveDir, newFileName)
-		localFilePath = fmt.Sprintf("%s/%s", path, newFileName)
-	}
+	fileExt := path.Ext(fileHeader.Filename)
+	uploadFilePath := fmt.Sprintf("%s/%s%s", targetSaveFolder, strconv.FormatInt(time.Now().UnixNano(), 10), fileExt)
 	defer file.Close()
-	err = ctx.SaveToFile("file", completeFilePath)
-
+	err = ctx.SaveToFile("file", uploadFilePath)
 	if err != nil {
 		log.Fatal(err)
 		response.Code = vo.UploadFileFailed
 		response.Message = "存储文件失败"
-	} else {
-		newFileModel, err := models.NewFileAndSave(uploadFilePath, localFilePath, tokenModel.Client)
-		if err != nil {
-			response.Code = vo.UploadFileFailed
-			response.Message = "存储文件记录到数据库错误"
-		} else {
-			response.Data = make(map[string] interface{})
-			response.Data["slug"] = newFileModel.Slug
-		}
+		return "", err
 	}
-	ctx.ServeJSON()
+	return uploadFilePath, nil
 }

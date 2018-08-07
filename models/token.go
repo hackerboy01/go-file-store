@@ -57,14 +57,18 @@ func IsTokenValidate(token string) (*Token, error)  {
 		Token: token,
 	}
 
-	err := db.Read(tokenModel)
+	err := db.Read(tokenModel, "Token")
 	if err != nil {
 		return nil, err
 	}
+	db.Read(tokenModel.Client)
 	return tokenModel, nil
 }
 
 // IsTokenExpire验证Token是否过期
 func (t *Token) IsTokenExpire() bool {
-	return t.Expires < uint(time.Now().Unix())
+	if t.Expires < uint(time.Now().Unix()) {
+		return true
+	}
+	return false
 }
