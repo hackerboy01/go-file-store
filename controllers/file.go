@@ -11,6 +11,8 @@ import (
 	"time"
 	"log"
 	"strconv"
+	"net/url"
+	"net/http"
 )
 
 type FileController struct {
@@ -73,6 +75,71 @@ func (ctx *FileController) Upload()  {
 		response.Data["slug"] = newFileModel.Slug
 	}
 	ctx.ServeJSON()
+}
+
+func (ctx *FileController) Download()  {
+	response := &vo.ResponseMessage{
+		Code: vo.DownloadSuccess,
+		Message: "文件下载成功",
+	}
+
+	ctx.Data["json"] = response
+
+	if ctx.Ctx.Input.Method() != "GET" {
+		ctx.Ctx.Output.SetStatus(405)
+		response.Code = vo.RequestError
+		response.Message = "只允许GET方式请求"
+		ctx.ServeJSON()
+		ctx.StopRun()
+	}
+
+	token := strings.Trim(ctx.GetString("token"), " ")
+	slug := strings.Trim(ctx.GetString("slug"), " ")
+	tokenModel, err := models.IsTokenValidate(token)
+
+	if err != nil {
+		response.Code = vo.InvalidToken
+		response.Message = "Token 非法"
+		ctx.ServeJSON()
+		ctx.StopRun()
+	}
+
+	if tokenModel.IsTokenExpire() {
+		response.Code = vo.ExpiredToken
+		response.Message = "Token已过期"
+		ctx.ServeJSON()
+		ctx.StopRun()
+	}
+
+	file, err := models.GetFileBySlug(slug)
+
+	if err != nil {
+		response.Code = vo.InvalIdSlug
+		response.Message = "非法的Slug"
+		ctx.ServeJSON()
+		ctx.StopRun()
+	}
+
+	if file.IsFileExists() == false {
+		response.Code = vo.DownloadFileLost
+		response.Message = "文件已被删除"
+		ctx.ServeJSON()
+		ctx.StopRun()
+	}
+
+	fileMIME := file.FileMIME()
+	if fileMIME == "" {
+		fileMIME = "application/octet-stream"
+	}
+	ctx.Ctx.Output.Header("Content-Disposition", "attachment; filename=" + url.PathEscape(file.FileName()))
+	ctx.Ctx.Output.Header("Content-Description", "File Transfer")
+	ctx.Ctx.Output.Header("Content-Type", fileMIME)
+	ctx.Ctx.Output.Header("Content-Transfer-Encoding", "binary")
+	ctx.Ctx.Output.Header("Expires", "0")
+	ctx.Ctx.Output.Header("Cache-Control", "public")
+	ctx.Ctx.Output.Header("Pragma", "public")
+	http.ServeFile(ctx.Ctx.ResponseWriter, ctx.Ctx.Request, file.Upload)
+
 }
 
 // saveFiles 保存文件方法

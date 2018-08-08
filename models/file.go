@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"mime"
+	"log"
 )
 
 type File struct {
@@ -57,6 +58,21 @@ func NewFileAndSave(uploadFileName string, client *Client) (*File, error) {
 	}
 }
 
+// GetFileBySlug 根据Slug获取文件
+func GetFileBySlug(slug string) (*File, error)  {
+	db := orm.NewOrm()
+	file := &File{
+		Slug: slug,
+	}
+	err := db.Read(file, "Slug")
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	db.Read(file.Client)
+	return file, nil
+}
+
 
 // GetCompleteFilePath 获取文件的绝对路径
 func (f *File) GetCompleteFilePath() string {
@@ -67,8 +83,8 @@ func (f *File) GetCompleteFilePath() string {
 }
 
 // isFileExists 判断文件是否存在
-func (f *File) isFileExists() bool {
-	if _, err := os.Stat(f.GetCompleteFilePath()); err != nil && os.IsNotExist(err) {
+func (f *File) IsFileExists() bool {
+	if _, err := os.Stat(f.Upload); err != nil && os.IsNotExist(err) {
 		return false
 	}
 	return true
@@ -76,7 +92,7 @@ func (f *File) isFileExists() bool {
 
 // FileName	文件名
 func (f *File) FileName() string {
-	segments := strings.Split(f.Local, "/")
+	segments := strings.Split(f.Upload, "/")
 	return segments[len(segments) - 1]
 }
 
